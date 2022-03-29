@@ -1,0 +1,64 @@
+version: '3.8'
+services:
+  php-laravel:
+    container_name: laravel-app
+    build:
+      context: '.'
+      dockerfile: Dockerfile
+      args:
+      - WITH_XDEBUG=${XDEBUG}
+    depends_on:
+      - mysql
+      - mongodb
+    env_file:
+      - .env
+    ports:
+      - 8000:80
+    networks:
+      backend:
+        aliases:
+          - app            
+  mysql:
+    container_name: db
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USERNAME}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "3306"
+    volumes:
+    - mysql_data:/var/lib/mysql
+    - ./dump/schema.sql:/docker-entrypoint-initdb.d/schema.sql   
+    networks:
+      backend:
+        aliases:
+          - mysql-db                    
+  mongodb:
+    image: mongo:4.4
+    container_name: mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
+    restart: unless-stopped
+    ports:
+      - "27017"
+    volumes:
+      - mongodb_db:/data/db
+    networks:
+      backend:
+        aliases:
+          - mongo-db        
+volumes:
+  mongodb_db:
+      driver: local
+  mysql_data:
+      driver: local
+networks:
+  backend:
+    name: backend-network          
+
+
